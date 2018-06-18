@@ -1,5 +1,6 @@
 package com.lzp.test;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 public class Utils {
@@ -51,5 +52,22 @@ public class Utils {
             newByteArray[i] = newByte.get(i);
         }
         return new String(newByteArray);
+    }
+
+    /**
+     * int to byte array
+     * 网络字节序
+     * @param value
+     * @return
+     */
+    public static byte[] int2ByteArray(int value) {
+        byte[] result = new byte[4];
+
+        result[0] = (byte) (value);
+        result[1] = (byte) (value >> 8);
+        result[2] = (byte) (value >> 16);
+        result[3] = (byte) (value >> 24);
+
+        return result;
     }
 }

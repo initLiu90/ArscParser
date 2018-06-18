@@ -3,14 +3,25 @@ package com.lzp.test;
 import com.lzp.test.type.ParseUtils;
 import com.lzp.test.type.ResourceTypes;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-
 
 public class Test {
     public static void main(String[] args) {
-        byte[] srcs = readResourcearscFile("resources.arsc");
+        byte[] srcs = FileUtils.readResourcearscFile("resources1.arsc");
+        byte[] newSrcs = reWritePackeID(srcs, 100);
+        FileUtils.createResourcesarscFile("D:/Workspace/Java/Test", "new_resource.arsc", newSrcs);
+
+//        byte[] srcs = FileUtils.readResourcearscFile("new_resource.arsc");
+//        parse(srcs);
+    }
+
+    private static byte[] reWritePackeID(byte[] srcs, int packageId) {
+        ParseUtils.parseResTable_header(srcs);
+        ParseUtils.parseResStringPool_header(srcs);
+        byte[] newSrcs = ParseUtils.reWritePackeId(srcs, packageId);
+        return newSrcs;
+    }
+
+    private static void parse(byte[] srcs) {
         ResourceTypes.ResTable_header resTable_header = ParseUtils.parseResTable_header(srcs);
 //        System.out.println(resTable_header.toString());
 
@@ -46,33 +57,5 @@ public class Test {
                 System.out.println("-------------------------------");
             }
         }
-    }
-
-    private static byte[] readResourcearscFile(String filePath) {
-        if (TextUtils.isEmpty(filePath)) return null;
-        File file = new File(filePath);
-        if (!file.exists() || file.isDirectory()) {
-            throw new RuntimeException("Invalide file path:" + filePath);
-        }
-        byte[] srcBytes = null;
-        FileInputStream fis = null;
-        ByteArrayOutputStream bos = null;
-        try {
-            fis = new FileInputStream(file);
-            bos = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
-            int len = 0;
-            while ((len = fis.read(buffer)) != -1) {
-                bos.write(buffer, 0, len);
-                bos.flush();
-            }
-            srcBytes = bos.toByteArray();
-
-            fis.close();
-            bos.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return srcBytes;
     }
 }

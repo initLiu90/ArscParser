@@ -2,10 +2,7 @@ package com.lzp.test.type;
 
 import com.lzp.test.Utils;
 
-import java.net.URI;
-import java.sql.Ref;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 
 public class ParseUtils {
     private static int resStringPoolChunkOffset;//字符串池的偏移值
@@ -64,6 +61,7 @@ public class ParseUtils {
         byte[] idBytes = Utils.copyByte(src, packageChunkOffset + resTable_package.header.getSize(), 4);
         resTable_package.id = Utils.byte2int(idBytes);
         packId = resTable_package.id;
+        System.out.println("packageId:" + Integer.toHexString(packId));
 
         byte[] nameBytes = Utils.copyByte(src, packageChunkOffset + resTable_package.header.getSize() + 4, 2 * 128);
         String packageName = new String(nameBytes);
@@ -247,8 +245,7 @@ public class ParseUtils {
         for (int i = 0; i < resTable_type.entryCount; i++) {
             int resId = getResId(i);
 //            System.out.println("resId:0x" + Integer.toHexString(resId));
-            String keyName = keyStringList.get(entryCounts - curTypeEntryCounts + i);
-            System.out.println("R." + typeName + "." + keyName + "=0x" + resId);
+            System.out.println("R." + typeName + "." + getKeyName(i) + "=0x" + Integer.toHexString(resId));
 
 
             resTable_entries[i] = parseResTable_entry(src, entryAryOffset);
@@ -434,6 +431,32 @@ public class ParseUtils {
         return header;
     }
 
+    public static byte[] reWritePackeId(byte[] src, int packeageId) {
+        ResourceTypes.ResTable_package resTable_package = new ResourceTypes.ResTable_package();
+        resTable_package.header = parseResChunk_header(src, packageChunkOffset + 0);
+
+        byte[] idBytes = Utils.copyByte(src, packageChunkOffset + resTable_package.header.getSize(), 4);
+        resTable_package.id = Utils.byte2int(idBytes);
+
+        byte[] newSrc = new byte[src.length];
+        if (packeageId != resTable_package.id) {
+            byte[] newIdBytes = Utils.int2ByteArray(packeageId);
+
+            int pidStart = packageChunkOffset + resTable_package.header.getSize();
+            int pidEnd = packageChunkOffset + resTable_package.header.getSize() + 4;
+
+            for (int i = 0; i < src.length; i++) {
+                if (i >= pidStart && i < pidEnd) {
+                    int index = i - pidStart;
+                    newSrc[i] = newIdBytes[index];
+                } else {
+                    newSrc[i] = src[i];
+                }
+            }
+        }
+        return newSrc;
+    }
+
     /**
      * 判断是否到文件末尾了
      *
@@ -473,5 +496,16 @@ public class ParseUtils {
 
     private static int computeLengthOffset(int length, boolean isUtf8) {
         return isUtf8 ? length : length * 2;
+    }
+
+    private static String getKeyName(int index) {
+        try {
+            String keyName = keyStringList.get(entryCounts - curTypeEntryCounts + index);
+            return keyName;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+
     }
 }
