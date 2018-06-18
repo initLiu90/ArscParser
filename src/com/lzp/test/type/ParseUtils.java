@@ -5,6 +5,7 @@ import com.lzp.test.Utils;
 import java.net.URI;
 import java.sql.Ref;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
 public class ParseUtils {
     private static int resStringPoolChunkOffset;//字符串池的偏移值
@@ -21,6 +22,9 @@ public class ParseUtils {
     //资源包的id和类型id
     private static int packId;
     private static int resTypeId;
+
+    private static int curTypeEntryCounts = 0;
+    private static int entryCounts = 0;//辅助获取资源key值的
 
     /**
      * 解析ResTable_header头信息
@@ -114,6 +118,8 @@ public class ParseUtils {
 
         byte[] entryCountByte = Utils.copyByte(src, offset + 1 + 1 + 2, 4);
         resTable_typeSpec.entryCount = Utils.byte2int(entryCountByte);
+        curTypeEntryCounts = resTable_typeSpec.entryCount;
+        entryCounts += resTable_typeSpec.entryCount;
 
         resTypeOffset = resTypeOffset + resTable_typeSpec.header.size;
         return resTable_typeSpec;
@@ -168,12 +174,14 @@ public class ParseUtils {
         int stringContentIndex = offset + resStringPool_header.stringStart;
         int index = 0;
         while (index < resStringPool_header.stringCount) {
-            byte[] stringSizeByte = Utils.copyByte(src, stringContentIndex, 2);
-            int stringSize = (stringSizeByte[1] & 0x7F);
-            if (stringSize != 0) {
+            byte[] lenByte = Utils.copyByte(src, stringContentIndex, 2);
+            int len = (lenByte[0] & 0x7F);
+            len = computeLengthOffset(len, isUtf8);
+            if (len != 0) {
                 String val = "";
                 try {
-                    val = new String(Utils.copyByte(src, stringContentIndex + 2, stringSize), "utf-8");
+                    byte[] stringBytes = Utils.copyByte(src, stringContentIndex + 2, len);
+                    val = new String(stringBytes, "utf-8");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -181,7 +189,11 @@ public class ParseUtils {
             } else {
                 stringList.add("");
             }
-            stringContentIndex += (stringSize + 3);
+            if (isUtf8) {
+                stringContentIndex += (len + 3);
+            } else {
+                stringContentIndex += (len + 2 + 2);
+            }
             index++;
         }
         for (String str : stringList) {
@@ -223,7 +235,9 @@ public class ParseUtils {
 
 //        System.out.println("res type info:" + resTable_type);
 
-        System.out.println("type_name:" + typeStringList.get(resTable_type.id - 1));
+        String typeName = typeStringList.get(resTable_type.id - 1);
+        System.out.println("type_name:" + typeName);
+
 
         //这里开始解析后面对应的ResEntry和ResValue
         int entryAryOffset = resTypeOffset + resTable_type.entriesStart;
@@ -232,7 +246,10 @@ public class ParseUtils {
 
         for (int i = 0; i < resTable_type.entryCount; i++) {
             int resId = getResId(i);
-            System.out.println("resId:0x" + Integer.toHexString(resId));
+//            System.out.println("resId:0x" + Integer.toHexString(resId));
+            String keyName = keyStringList.get(entryCounts - curTypeEntryCounts + i);
+            System.out.println("R." + typeName + "." + keyName + "=0x" + resId);
+
 
             resTable_entries[i] = parseResTable_entry(src, entryAryOffset);
             entryAryOffset += resTable_entries[i].getSize();
@@ -250,7 +267,7 @@ public class ParseUtils {
                     ResourceTypes.ResTable_map resTable_map = new ResourceTypes.ResTable_map();
                     resTable_map.name = parseResTable_ref(src, entryAryOffset);
                     resTable_map.value = parseRes_value(src, entryAryOffset + resTable_map.name.getSize());
-                    System.out.print(resTable_map.toString());
+                    System.out.print("resTable_map:" + resTable_map.toString());
                     entryAryOffset += resTable_map.getSize();
                 }
 
@@ -259,6 +276,7 @@ public class ParseUtils {
                 entryAryOffset += res_values[i].getSize();
                 System.out.println("value:" + res_values[i].toString());
             }
+            System.out.println("******************************");
         }
         resTypeOffset += resTable_type.header.size;
 
@@ -453,60 +471,7 @@ public class ParseUtils {
         return (((packId) << 24) | (((resTypeId) & 0xFF) << 16) | (entryid & 0xFFFF));
     }
 
-//    public static String decodeString(byte[] buffer, int offset, boolean isUtf8) {
-//        int length;
-//        int characterCount = decodeLength(buffer, offset, isUtf8);
-//        offset += computeLengthOffset(characterCount, isUtf8);
-//        // UTF-8 strings have 2 lengths: the number of characters, and then the encoding length.
-//        // UTF-16 strings, however, only have 1 length: the number of characters.
-//        if (isUtf8) {
-//            length = decodeLength(buffer, offset, isUtf8);
-//            offset += computeLengthOffset(length, isUtf8);
-//        } else {
-//            length = characterCount * 2;
-//        }
-//        try {
-//            return new String(buffer, offset, length, "utf-8");
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return "";
-//        }
-//    }
-//
-//    private static int decodeLength(byte[] buffer, int offset, boolean isUtf8) {
-//        return isUtf8 ? decodeLengthUTF8(buffer, offset) : decodeLengthUTF16(buffer, offset);
-//    }
-//
-//    private static int decodeLengthUTF8(byte[] buffer, int offset) {
-//        // UTF-8 strings use a clever variant of the 7-bit integer for packing the string length.
-//        // If the first byte is >= 0x80, then a second byte follows. For these values, the length
-//        // is WORD-length in big-endian & 0x7FFF.
-////        int length = UnsignedBytes.toInt(buffer.get(offset));
-//        byte b = Utils.copyByte(buffer, offset, 1)[0];
-//        int length = b & 0xFF;
-//
-//        if ((length & 0x80) != 0) {
-//            b = Utils.copyByte(buffer, offset + 1, 1)[0];
-//
-//            length = ((length & 0x7F) << 8) | (b & 0xFF);
-//        }
-//        return length;
-//    }
-//
-//    private static int decodeLengthUTF16(byte[] buffer, int offset) {
-//        // UTF-16 strings use a clever variant of the 7-bit integer for packing the string length.
-//        // If the first word is >= 0x8000, then a second word follows. For these values, the length
-//        // is DWORD-length in big-endian & 0x7FFFFFFF.
-//        byte[] bytes = Utils.copyByte(buffer, offset, 2);
-//        int length = (Utils.byte2Short(bytes) & 0xFFFF);
-//        if ((length & 0x8000) != 0) {
-//            bytes = Utils.copyByte(buffer, offset + 2, 2);
-//            length = ((length & 0x7FFF) << 16) | (Utils.byte2Short(bytes) & 0xFFFF);
-//        }
-//        return length;
-//    }
-//
-//    private static int computeLengthOffset(int length, boolean isUtf8) {
-//        return (isUtf8 ? 1 : 2) * (length >= (isUtf8 ? 0x80 : 0x8000) ? 2 : 1);
-//    }
+    private static int computeLengthOffset(int length, boolean isUtf8) {
+        return isUtf8 ? length : length * 2;
+    }
 }

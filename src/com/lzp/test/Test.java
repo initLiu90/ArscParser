@@ -36,12 +36,14 @@ public class Test {
             resCount++;
             boolean isTypeSpec = ParseUtils.isTypeSpec(srcs);
             if (isTypeSpec) {
+                System.out.println("----------parse typeSpec--------------");
                 ResourceTypes.ResTable_typeSpec table_typeSpec = ParseUtils.parseResTable_typeSpec(srcs);
                 System.out.println(table_typeSpec.toString());
-//                System.out.println("-------------------------------");
-            }else{//ResTable_type
+                System.out.println("-------------------------------");
+            } else {//ResTable_type
+                System.out.println("----------parse type--------------");
                 ResourceTypes.ResTable_type resTable_type = ParseUtils.parseResTable_type(srcs);
-//                System.out.println(resTable_type.toString());
+                System.out.println("-------------------------------");
             }
         }
     }
