@@ -6,12 +6,15 @@ import com.lzp.test.type.ResourceTypes;
 
 public class Test {
     public static void main(String[] args) {
-        byte[] srcs = FileUtils.readResourcearscFile("resources1.arsc");
-        byte[] newSrcs = reWritePackeID(srcs, 100);
-        FileUtils.createResourcesarscFile("D:/Workspace/Java/Test", "new_resource.arsc", newSrcs);
+//        byte[] srcs = FileUtils.readBinaryFile("resources1.arsc");
+//        byte[] newSrcs = reWritePackeID(srcs, 100);
+//        FileUtils.createResourcesarscFile("D:/Workspace/Java/Test", "new_resource.arsc", newSrcs);
 
-//        byte[] srcs = FileUtils.readResourcearscFile("new_resource.arsc");
+//        byte[] srcs = FileUtils.readBinaryFile("new_resource.arsc");
 //        parse(srcs);
+
+        byte[] src = FileUtils.readBinaryFile("/Users/lillian/Workspace/Android/Tests/resarscparse/amf1.xml");
+        parseAndroidManifest(src);
     }
 
     private static byte[] reWritePackeID(byte[] srcs, int packageId) {

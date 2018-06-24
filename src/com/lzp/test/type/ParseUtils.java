@@ -508,4 +508,110 @@ public class ParseUtils {
         }
 
     }
+
+    /********************pasrse androidmanifest.xml********************/
+    /******************************************************************/
+    public static void parseResXMLTree_header(byte[] src) {
+        int offset = 0;
+        ResourceTypes.ResXMLTree_header resXMLTree_header = new ResourceTypes.ResXMLTree_header();
+
+        //step1
+        ResourceTypes.ResChunk_header resChunk_header = parseResChunk_header(src, 0);
+        resXMLTree_header.header = resChunk_header;
+        offset += resXMLTree_header.getSize();
+
+        //step2
+        ArrayList<String> strings = new ArrayList<>();
+        ResourceTypes.ResStringPool_header resStringPool_header = parseStringPollChunk(src, offset, strings);
+        offset += resStringPool_header.header.size;
+
+        //step3
+        ResourceTypes.ResChunk_header resChunk_header1 = parseResChunk_header(src, offset);
+        int resIdCount = (resChunk_header1.size - resChunk_header1.getSize()) / 4;
+        offset += resChunk_header.getSize();
+        for (int i = 0; i < resIdCount; i++) {
+            byte[] resIdBytes = Utils.copyByte(src, offset, 4);
+            int resId = Utils.byte2int(resIdBytes);
+            System.out.println("system resid=0x" + Integer.toHexString(resId));
+            offset += 4;
+        }
+
+        //step4:RES_XML_START_NAMESPACE_TYPE
+        ResourceTypes.ResXMLTree_node resXMLTree_node = parseResXMLTree_node(src, offset);
+        offset += resXMLTree_node.header.size;
+        parseXmlElement(src, offset, strings);
+    }
+
+    private static void parseXmlElement(byte[] src, int offset, ArrayList<String> resStrings) {
+        while (offset < src.length) {
+            //step5:RES_XML_START_ELEMENT_TYPE
+            ResourceTypes.ResXMLTree_node resXMLTreeNode = parseResXMLTree_node(src, offset);
+
+            offset += resXMLTreeNode.getSize();
+
+            switch (resXMLTreeNode.header.type) {
+                case ResourceTypes.ResXMLTree_node.RES_XML_START_ELEMENT_TYPE:
+                    ResourceTypes.ResXMLTree_attrExt resXMLTreeAttrExt = parseResXMLTree_attrExt(src, offset);
+                    offset += resXMLTreeAttrExt.attributeStart;
+
+                    for (int i = 0; i < resXMLTreeAttrExt.attributeCount; i++) {
+                        ResourceTypes.ResXMLTree_attribute resXMLTreeAttribute = parseResXMLTree_attribute(src, offset);
+
+                        String attrName = resStrings.get(resXMLTreeAttribute.name.index);
+                        String attrValue = resXMLTreeAttribute.rawValue.index != -1 ? resStrings.get(resXMLTreeAttribute.rawValue.index) : Integer.toHexString(resXMLTreeAttribute.typedValue.data);
+//                        System.out.println("attrName=" + attrValue);
+//                        System.out.println("attrValue=" + resStrings.get(resXMLTreeAttribute.name.index));
+                        System.out.println("resId=0x" + Integer.toHexString(resXMLTreeAttribute.typedValue.data));
+
+                        offset += resXMLTreeAttribute.getSize();
+                    }
+                    break;
+                case ResourceTypes.ResXMLTree_node.RES_XML_END_ELEMENT_TYPE:
+                    ResourceTypes.ResXMLTree_endElementExt resXMLTreeEndElementExt = parseResXMLTree_endElementExt(src, offset);
+                    offset += resXMLTreeEndElementExt.getSize();
+                    break;
+                case ResourceTypes.ResXMLTree_node.RES_XML_END_NAMESPACE_TYPE:
+                    return;
+                default:
+                    return;
+            }
+        }
+    }
+
+    private static ResourceTypes.ResXMLTree_node parseResXMLTree_node(byte[] src, int start) {
+        ResourceTypes.ResXMLTree_node resXMLTree_node = new ResourceTypes.ResXMLTree_node();
+        resXMLTree_node.header = parseResChunk_header(src, start);
+        resXMLTree_node.lineNumber = Utils.byte2int(Utils.copyByte(src, start + resXMLTree_node.header.getSize(), 4));
+        resXMLTree_node.comment = parseResStringPool_ref(src, start + resXMLTree_node.header.getSize() + 4);
+        return resXMLTree_node;
+    }
+
+    private static ResourceTypes.ResXMLTree_attrExt parseResXMLTree_attrExt(byte[] src, int start) {
+        ResourceTypes.ResXMLTree_attrExt resXMLTree_attrExt = new ResourceTypes.ResXMLTree_attrExt();
+        resXMLTree_attrExt.ns = parseResStringPool_ref(src, start);
+        resXMLTree_attrExt.name = parseResStringPool_ref(src, start + resXMLTree_attrExt.ns.getSize());
+        resXMLTree_attrExt.attributeStart = Utils.byte2Short(Utils.copyByte(src, start + resXMLTree_attrExt.ns.getSize() + resXMLTree_attrExt.name.getSize(), 2));
+        resXMLTree_attrExt.attributeSize = Utils.byte2Short(Utils.copyByte(src, start + resXMLTree_attrExt.ns.getSize() + resXMLTree_attrExt.name.getSize() + 2, 2));
+        resXMLTree_attrExt.attributeCount = Utils.byte2Short(Utils.copyByte(src, start + resXMLTree_attrExt.ns.getSize() + resXMLTree_attrExt.name.getSize() + 2 * 2, 2));
+        resXMLTree_attrExt.idIndex = Utils.byte2Short(Utils.copyByte(src, start + resXMLTree_attrExt.ns.getSize() + resXMLTree_attrExt.name.getSize() + 2 * 3, 2));
+        resXMLTree_attrExt.classIndex = Utils.byte2Short(Utils.copyByte(src, start + resXMLTree_attrExt.ns.getSize() + resXMLTree_attrExt.name.getSize() + 2 * 4, 2));
+        resXMLTree_attrExt.styleIndex = Utils.byte2Short(Utils.copyByte(src, start + resXMLTree_attrExt.ns.getSize() + resXMLTree_attrExt.name.getSize() + 2 * 5, 2));
+        return resXMLTree_attrExt;
+    }
+
+    private static ResourceTypes.ResXMLTree_attribute parseResXMLTree_attribute(byte[] src, int start) {
+        ResourceTypes.ResXMLTree_attribute resXMLTree_attribute = new ResourceTypes.ResXMLTree_attribute();
+        resXMLTree_attribute.ns = parseResStringPool_ref(src, start);
+        resXMLTree_attribute.name = parseResStringPool_ref(src, start + resXMLTree_attribute.ns.getSize());
+        resXMLTree_attribute.rawValue = parseResStringPool_ref(src, start + resXMLTree_attribute.ns.getSize() + resXMLTree_attribute.name.getSize());
+        resXMLTree_attribute.typedValue = parseRes_value(src, start + resXMLTree_attribute.ns.getSize() + resXMLTree_attribute.name.getSize() + resXMLTree_attribute.rawValue.getSize());
+        return resXMLTree_attribute;
+    }
+
+    private static ResourceTypes.ResXMLTree_endElementExt parseResXMLTree_endElementExt(byte[] src, int start) {
+        ResourceTypes.ResXMLTree_endElementExt resXMLTree_endElementExt = new ResourceTypes.ResXMLTree_endElementExt();
+        resXMLTree_endElementExt.ns = parseResStringPool_ref(src, start);
+        resXMLTree_endElementExt.name = parseResStringPool_ref(src, start + resXMLTree_endElementExt.ns.getSize());
+        return resXMLTree_endElementExt;
+    }
 }

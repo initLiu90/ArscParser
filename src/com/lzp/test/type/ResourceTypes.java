@@ -764,4 +764,158 @@ public class ResourceTypes {
                     '}';
         }
     }
+
+    public static class ResXMLTree_header implements Resource {
+        ResChunk_header header;
+
+        ResXMLTree_header() {
+            header = new ResChunk_header();
+        }
+
+        @Override
+        public int getSize() {
+            return header.getSize();
+        }
+
+        @Override
+        public String toString() {
+            return "ResXMLTree_header{" +
+                    "header=" + header.toString() +
+                    '}';
+        }
+    }
+
+    public static class ResXMLTree_node implements Resource {
+        static final int RES_XML_START_ELEMENT_TYPE = 0x0102;
+        static final int RES_XML_END_ELEMENT_TYPE = 0x0103;
+        static final int RES_XML_END_NAMESPACE_TYPE = 0x0101;
+
+        ResChunk_header header;
+        int lineNumber;
+        ResStringPool_ref comment;
+
+        ResXMLTree_node() {
+            header = new ResChunk_header();
+            comment = new ResStringPool_ref();
+        }
+
+        @Override
+        public int getSize() {
+            return header.getSize() + 4 + comment.getSize();
+        }
+
+        @Override
+        public String toString() {
+            return "ResXMLTree_node{" +
+                    "header=" + header.toString() +
+                    ", lineNumber=" + lineNumber +
+                    ", comment=" + comment.toString() +
+                    '}';
+        }
+    }
+
+    public static class ResXMLTree_namespaceExt implements Resource {
+        ResStringPool_ref prefix;
+        ResStringPool_ref uri;
+
+        ResXMLTree_namespaceExt() {
+            prefix = new ResStringPool_ref();
+            uri = new ResStringPool_ref();
+        }
+
+        @Override
+        public int getSize() {
+            return prefix.getSize() + uri.getSize();
+        }
+
+        @Override
+        public String toString() {
+            return "ResXMLTree_namespaceExt{" +
+                    "prefix=" + prefix.toString() +
+                    ", uri=" + uri.toString() +
+                    '}';
+        }
+    }
+
+    public static class ResXMLTree_attrExt implements Resource {
+        ResStringPool_ref ns;
+        ResStringPool_ref name;
+        short attributeStart;
+        short attributeSize;
+        short attributeCount;
+        short idIndex;
+        short classIndex;
+        short styleIndex;
+
+        ResXMLTree_attrExt() {
+            ns = new ResStringPool_ref();
+            name = new ResStringPool_ref();
+        }
+
+        @Override
+        public int getSize() {
+            return ns.getSize() + name.getSize() + 2 * 6;
+        }
+
+        @Override
+        public String toString() {
+            return "ResXMLTree_attrExt{" +
+                    "ns=" + ns.toString() +
+                    ", name=" + name.toString() +
+                    ", attributeStart=" + attributeStart +
+                    ", attributeSize=" + attributeSize +
+                    ", attributeCount=" + attributeCount +
+                    ", idIndex=" + idIndex +
+                    ", classIndex=" + classIndex +
+                    ", styleIndex=" + styleIndex +
+                    '}';
+        }
+    }
+
+    public static class ResXMLTree_attribute implements Resource {
+        ResStringPool_ref ns;
+        ResStringPool_ref name;
+        ResStringPool_ref rawValue;
+        Res_value typedValue;
+
+        ResXMLTree_attribute() {
+            ns = new ResStringPool_ref();
+            name = new ResStringPool_ref();
+            rawValue = new ResStringPool_ref();
+            typedValue = new Res_value();
+        }
+
+        @Override
+        public int getSize() {
+            return ns.getSize() + name.getSize() + rawValue.getSize() + typedValue.getSize();
+        }
+
+        @Override
+        public String toString() {
+            return "ResXMLTree_attribute{" +
+                    "ns=" + ns.toString() +
+                    ", name=" + name.toString() +
+                    ", rawValue=" + rawValue.toString() +
+                    ", typedValue=" + typedValue.toString() +
+                    '}';
+        }
+    }
+
+    public static class ResXMLTree_endElementExt implements Resource {
+        ResStringPool_ref ns;
+        ResStringPool_ref name;
+
+        @Override
+        public int getSize() {
+            return ns.getSize() + name.getSize();
+        }
+
+        @Override
+        public String toString() {
+            return "ResXMLTree_endElementExt{" +
+                    "ns=" + ns.toString() +
+                    ", name=" + name.toString() +
+                    '}';
+        }
+    }
 }

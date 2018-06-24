@@ -6,7 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 
 public class FileUtils {
-    public static byte[] readResourcearscFile(String filePath) {
+    public static byte[] readBinaryFile(String filePath) {
         if (TextUtils.isEmpty(filePath)) return null;
         File file = new File(filePath);
         if (!file.exists() || file.isDirectory()) {
