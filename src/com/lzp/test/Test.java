@@ -13,7 +13,7 @@ public class Test {
 //        byte[] srcs = FileUtils.readBinaryFile("new_resource.arsc");
 //        parse(srcs);
 
-        byte[] src = FileUtils.readBinaryFile("/Users/lillian/Workspace/Android/Tests/resarscparse/amf1.xml");
+        byte[] src = FileUtils.readBinaryFile("D:/Workspace/Java/ArscParser/AndroidManifest.xml");
         parseAndroidManifest(src);
     }
 
