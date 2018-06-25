@@ -509,9 +509,9 @@ public class ParseUtils {
 
     }
 
-    /********************pasrse androidmanifest.xml********************/
+    /********************pasrse xml file********************/
     /******************************************************************/
-    public static void parseAndroidmanifest(byte[] src) {
+    public static void parseXml(byte[] src) {
         int offset = 0;
         ResourceTypes.ResXMLTree_header resXMLTree_header = new ResourceTypes.ResXMLTree_header();
 

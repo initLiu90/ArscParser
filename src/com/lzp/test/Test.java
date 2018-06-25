@@ -15,7 +15,7 @@ public class Test {
 
 //        byte[] src = FileUtils.readBinaryFile("D:/Workspace/Java/ArscParser/activity_main.xml");
         byte[] src = FileUtils.readBinaryFile("D:/Workspace/Java/ArscParser/AndroidManifest.xml");
-        ParseUtils.parseAndroidmanifest(src);
+        ParseUtils.parseXml(src);
     }
 
     private static byte[] reWritePackeID(byte[] srcs, int packageId) {
