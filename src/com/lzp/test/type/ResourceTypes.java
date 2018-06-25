@@ -786,6 +786,7 @@ public class ResourceTypes {
     }
 
     public static class ResXMLTree_node implements Resource {
+        static final int RES_XML_START_NAMESPACE_TYPE = 0x0100;
         static final int RES_XML_START_ELEMENT_TYPE = 0x0102;
         static final int RES_XML_END_ELEMENT_TYPE = 0x0103;
         static final int RES_XML_END_NAMESPACE_TYPE = 0x0101;

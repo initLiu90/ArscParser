@@ -511,7 +511,7 @@ public class ParseUtils {
 
     /********************pasrse androidmanifest.xml********************/
     /******************************************************************/
-    public static void parseResXMLTree_header(byte[] src) {
+    public static void parseAndroidmanifest(byte[] src) {
         int offset = 0;
         ResourceTypes.ResXMLTree_header resXMLTree_header = new ResourceTypes.ResXMLTree_header();
 
@@ -547,10 +547,10 @@ public class ParseUtils {
             //step5:RES_XML_START_ELEMENT_TYPE
             ResourceTypes.ResXMLTree_node resXMLTreeNode = parseResXMLTree_node(src, offset);
 
-            offset += resXMLTreeNode.getSize();
-
             switch (resXMLTreeNode.header.type) {
                 case ResourceTypes.ResXMLTree_node.RES_XML_START_ELEMENT_TYPE:
+                    offset += resXMLTreeNode.getSize();
+
                     ResourceTypes.ResXMLTree_attrExt resXMLTreeAttrExt = parseResXMLTree_attrExt(src, offset);
                     offset += resXMLTreeAttrExt.attributeStart;
 
@@ -567,10 +567,16 @@ public class ParseUtils {
                     }
                     break;
                 case ResourceTypes.ResXMLTree_node.RES_XML_END_ELEMENT_TYPE:
+                    offset += resXMLTreeNode.getSize();
+
                     ResourceTypes.ResXMLTree_endElementExt resXMLTreeEndElementExt = parseResXMLTree_endElementExt(src, offset);
                     offset += resXMLTreeEndElementExt.getSize();
                     break;
+                case ResourceTypes.ResXMLTree_node.RES_XML_START_NAMESPACE_TYPE:
+                    offset += resXMLTreeNode.header.size;
+                    break;
                 case ResourceTypes.ResXMLTree_node.RES_XML_END_NAMESPACE_TYPE:
+                    offset += resXMLTreeNode.getSize();
                     return;
                 default:
                     return;
