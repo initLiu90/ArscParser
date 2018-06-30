@@ -8,14 +8,19 @@ public class Test {
     public static void main(String[] args) {
 //        byte[] srcs = FileUtils.readBinaryFile("resources1.arsc");
 //        byte[] newSrcs = reWritePackeID(srcs, 100);
-//        FileUtils.createResourcesarscFile("D:/Workspace/Java/Test", "new_resource.arsc", newSrcs);
+//        FileUtils.createResourcesarscFile("D:/Workspace/Java/ArscParser", "new_resource.arsc", newSrcs);
 
-//        byte[] srcs = FileUtils.readBinaryFile("new_resource.arsc");
-//        parse(srcs);
+        byte[] srcs = FileUtils.readBinaryFile("resources.arsc");
+        parse(srcs);
 
 //        byte[] src = FileUtils.readBinaryFile("D:/Workspace/Java/ArscParser/activity_main.xml");
-        byte[] src = FileUtils.readBinaryFile("D:/Workspace/Java/ArscParser/AndroidManifest.xml");
-        ParseUtils.parseXml(src);
+//        byte[] src = FileUtils.readBinaryFile("D:/Workspace/Java/ArscParser/AndroidManifest.xml");
+//        ParseUtils.parseXml(src);
+    }
+
+    static int android_swap_long(int v)
+    {
+        return (v << 24) | ((v << 8) & 0x00FF0000) | ((v >> 8) & 0x0000FF00) | (v >> 24);
     }
 
     private static byte[] reWritePackeID(byte[] srcs, int packageId) {

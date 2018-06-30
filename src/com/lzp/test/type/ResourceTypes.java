@@ -765,6 +765,46 @@ public class ResourceTypes {
         }
     }
 
+    public static class ResTable_lib_header implements Resource {
+        ResChunk_header header;
+        int count;
+
+        ResTable_lib_header() {
+            header = new ResChunk_header();
+        }
+
+        @Override
+        public int getSize() {
+            return header.getSize() + 4;
+        }
+
+        @Override
+        public String toString() {
+            return "ResTable_lib_header{" +
+                    "header=" + header.toString() +
+                    ", count=" + count +
+                    '}';
+        }
+    }
+
+    public static class ResTable_lib_entry implements Resource {
+        int packageId;
+        char[] name = new char[128];
+
+        @Override
+        public int getSize() {
+            return 4 + 2 * 128;
+        }
+
+        @Override
+        public String toString() {
+            return "ResTable_lib_entry{" +
+                    "packageId=" + packageId +
+                    ", name=" + Arrays.toString(name) +
+                    '}';
+        }
+    }
+
     public static class ResXMLTree_header implements Resource {
         ResChunk_header header;
 

@@ -16,8 +16,11 @@ public class ParseUtils {
     private static ArrayList<String> keyStringList = new ArrayList<>();//所有资源key的集合（资源的文件名不带后缀）
     private static ArrayList<String> typeStringList = new ArrayList<>();//所有
 
+    private static int tableSize;
+
     //资源包的id和类型id
     private static int packId;
+    private static char[] packName;
     private static int resTypeId;
 
     private static int curTypeEntryCounts = 0;
@@ -32,6 +35,7 @@ public class ParseUtils {
     public static ResourceTypes.ResTable_header parseResTable_header(byte[] src) {
         ResourceTypes.ResTable_header resTable_header = new ResourceTypes.ResTable_header();
         resTable_header.header = parseResChunk_header(src, 0);
+        tableSize = resTable_header.header.size;
 
         byte[] packageCountByte = Utils.copyByte(src, resTable_header.header.getSize(), 4);
         resTable_header.packageCount = Utils.byte2int(packageCountByte);
@@ -66,6 +70,7 @@ public class ParseUtils {
         byte[] nameBytes = Utils.copyByte(src, packageChunkOffset + resTable_package.header.getSize() + 4, 2 * 128);
         String packageName = new String(nameBytes);
         resTable_package.name = Utils.filterStringNull(packageName).toCharArray();
+        packName = resTable_package.name;
 
         byte[] typeStringsBytes = Utils.copyByte(src, packageChunkOffset + resTable_package.header.getSize() + 4 + 2 * 128, 4);
         resTable_package.typeStrings = Utils.byte2int(typeStringsBytes);
@@ -194,9 +199,9 @@ public class ParseUtils {
             }
             index++;
         }
-        for (String str : stringList) {
-            System.out.println("str:" + str);
-        }
+//        for (String str : stringList) {
+//            System.out.println("str:" + str);
+//        }
 
         return resStringPool_header;
     }
@@ -236,43 +241,56 @@ public class ParseUtils {
         String typeName = typeStringList.get(resTable_type.id - 1);
         System.out.println("type_name:" + typeName);
 
+        int[] entriesOffsets = new int[resTable_type.entryCount];
+        int tmp = (resTypeOffset + resTable_type.entriesStart) - (resTable_type.entryCount * 4);
+        for (int i = 0; i < resTable_type.entryCount; i++) {
+            entriesOffsets[i] = Utils.byte2int(Utils.copyByte(src, tmp, 4));
+            tmp += 4;
+        }
 
         //这里开始解析后面对应的ResEntry和ResValue
-        int entryAryOffset = resTypeOffset + resTable_type.entriesStart;
+        int entryAryOffsetStart = resTypeOffset + resTable_type.entriesStart;
         ResourceTypes.ResTable_entry[] resTable_entries = new ResourceTypes.ResTable_entry[resTable_type.entryCount];
         ResourceTypes.Res_value[] res_values = new ResourceTypes.Res_value[resTable_type.entryCount];
 
         for (int i = 0; i < resTable_type.entryCount; i++) {
-            int resId = getResId(i);
-//            System.out.println("resId:0x" + Integer.toHexString(resId));
-            System.out.println("R." + typeName + "." + getKeyName(i) + "=0x" + Integer.toHexString(resId));
+            if (entriesOffsets[i] == -1) continue;
 
+            int entryAryOffset = entryAryOffsetStart + entriesOffsets[i];
+            if (tableSize - entryAryOffset < 16) break;
+//            System.out.println("start entryAryOffset" + entryAryOffset);
+
+            int resId = getResId(i);
+            System.out.println("resId:0x" + Integer.toHexString(resId));
+//            System.out.println("R." + typeName + "." + getKeyName(i) + "=0x" + Integer.toHexString(resId));
 
             resTable_entries[i] = parseResTable_entry(src, entryAryOffset);
             entryAryOffset += resTable_entries[i].getSize();
+            if (resTable_entries[i].flags == 0) {//Res_value
+                res_values[i] = parseRes_value(src, entryAryOffset);
+                entryAryOffset += res_values[i].getSize();
+//                System.out.println("value:" + res_values[i].toString());
+                System.out.println("value:0x" + Integer.toHexString(res_values[i].data));
+            } else if ((resTable_entries[i].flags & ResourceTypes.ResTable_entry.Flag.FLAG_COMPLEX) == ResourceTypes.ResTable_entry.Flag.FLAG_COMPLEX) {//ResTable_map_entry
+                ResourceTypes.ResTable_map_entry resTable_map_entry = parseResTable_map_entry(src, entryAryOffset);
+                System.out.println("resTable_map parent:0x" + Integer.toHexString(resTable_map_entry.parent.ident));
 
-            if (resTable_entries[i].flags == ResourceTypes.ResTable_entry.Flag.FLAG_COMPLEX) {//ResTable_map_entry
-                ResourceTypes.ResTable_map_entry resTable_map_entry = new ResourceTypes.ResTable_map_entry();
-                resTable_map_entry.parent = parseResTable_ref(src, entryAryOffset);
-
-                byte[] countBytes = Utils.copyByte(src, entryAryOffset + resTable_map_entry.parent.getSize(), 4);
-                resTable_map_entry.count = Utils.byte2int(countBytes);
-
-                entryAryOffset += resTable_map_entry.size;
+//                entryAryOffset += resTable_map_entry.size;
+                entryAryOffset += 8;
 
                 for (int j = 0; j < resTable_map_entry.count; j++) {
+//                    System.out.println("entryAryOffset" + entryAryOffset + "," + tableSize);
                     ResourceTypes.ResTable_map resTable_map = new ResourceTypes.ResTable_map();
                     resTable_map.name = parseResTable_ref(src, entryAryOffset);
+                    System.out.println("resTable_map name:0x" + Integer.toHexString(resTable_map.name.ident));
                     resTable_map.value = parseRes_value(src, entryAryOffset + resTable_map.name.getSize());
-                    System.out.print("resTable_map:" + resTable_map.toString());
+                    System.out.println("resTable_map value:0x" + Integer.toHexString(resTable_map.value.data));
+//                    System.out.print("resTable_map:" + resTable_map.toString());
                     entryAryOffset += resTable_map.getSize();
                 }
 
-            } else {//Res_value
-                res_values[i] = parseRes_value(src, entryAryOffset);
-                entryAryOffset += res_values[i].getSize();
-                System.out.println("value:" + res_values[i].toString());
             }
+
             System.out.println("******************************");
         }
         resTypeOffset += resTable_type.header.size;
@@ -280,9 +298,29 @@ public class ParseUtils {
         return resTable_type;
     }
 
+    private static ResourceTypes.ResTable_map_entry parseResTable_map_entry(byte[] src, int start) {
+        ResourceTypes.ResTable_map_entry resTable_map_entry = new ResourceTypes.ResTable_map_entry();
+        resTable_map_entry.parent = parseResTable_ref(src, start);
+        resTable_map_entry.count = Utils.byte2int(Utils.copyByte(src, start + resTable_map_entry.parent.getSize(), 4));
+
+        start = start + resTable_map_entry.parent.getSize() + 4;
+
+        byte[] sizeBytes = Utils.copyByte(src, start, 2);
+        resTable_map_entry.size = Utils.byte2Short(sizeBytes);
+
+        byte[] flagsBytes = Utils.copyByte(src, start + 2, 2);
+        resTable_map_entry.flags = Utils.byte2Short(flagsBytes);
+
+        resTable_map_entry.key = parseResStringPool_ref(src, start + 2 + 2);
+        return resTable_map_entry;
+    }
+
     private static ResourceTypes.ResTable_ref parseResTable_ref(byte[] src, int start) {
         ResourceTypes.ResTable_ref resTable_ref = new ResourceTypes.ResTable_ref();
         byte[] identBytes = Utils.copyByte(src, start, 4);
+
+        if (identBytes == null || identBytes.length == 0) return resTable_ref;
+
         resTable_ref.ident = Utils.byte2int(identBytes);
         return resTable_ref;
     }
@@ -304,6 +342,7 @@ public class ParseUtils {
         ResourceTypes.Res_value res_value = new ResourceTypes.Res_value();
 
         byte[] sizeBytes = Utils.copyByte(src, start, 2);
+        if (sizeBytes == null || sizeBytes.length == 0) return res_value;
         res_value.size = Utils.byte2Short(sizeBytes);
 
         byte[] res0Bytes = Utils.copyByte(src, start + 2, 1);
@@ -619,5 +658,20 @@ public class ParseUtils {
         resXMLTree_endElementExt.ns = parseResStringPool_ref(src, start);
         resXMLTree_endElementExt.name = parseResStringPool_ref(src, start + resXMLTree_endElementExt.ns.getSize());
         return resXMLTree_endElementExt;
+    }
+
+    private static void addLibraryTable(byte[] src, int start) {
+        ResourceTypes.ResTable_lib_header resTable_lib_header = new ResourceTypes.ResTable_lib_header();
+        ResourceTypes.ResTable_lib_entry resTable_lib_entry = new ResourceTypes.ResTable_lib_entry();
+
+        resTable_lib_header.header.type = 0x0203;//RES_TABLE_LIBRARY_TYPE
+        resTable_lib_header.header.headerSize = (short) resTable_lib_header.getSize();
+        resTable_lib_header.header.size = resTable_lib_header.getSize() + resTable_lib_entry.getSize();
+        resTable_lib_header.count = 1;
+
+        resTable_lib_entry.packageId = packId;
+        resTable_lib_entry.name = packName;
+
+
     }
 }

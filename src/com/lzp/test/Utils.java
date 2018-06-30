@@ -57,6 +57,7 @@ public class Utils {
     /**
      * int to byte array
      * 网络字节序
+     *
      * @param value
      * @return
      */
@@ -68,6 +69,13 @@ public class Utils {
         result[2] = (byte) (value >> 16);
         result[3] = (byte) (value >> 24);
 
+        return result;
+    }
+
+    public static byte[] short2ByteArray(short value) {
+        byte[] result = new byte[2];
+        result[1] = (byte) ((value >> 8) & 0xFF);
+        result[0] = (byte) (value & 0xFF);
         return result;
     }
 }
